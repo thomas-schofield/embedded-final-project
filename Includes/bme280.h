@@ -1,244 +1,217 @@
-/**
- * Copyright (C) 2018 - 2019 Bosch Sensortec GmbH
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the distribution.
- *
- * Neither the name of the copyright holder nor the names of the
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
- * CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDER
- * OR CONTRIBUTORS BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
- * OR CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
- *
- * The information provided is believed to be accurate and reliable.
- * The copyright holder assumes no responsibility
- * for the consequences of use
- * of such information nor for any infringement of patents or
- * other rights of third parties which may result from its use.
- * No license is granted by implication or otherwise under any patent or
- * patent rights of the copyright holder.
- *
- * @file    bme280.h
- * @date    26 Aug 2019
- * @version 3.3.7
- * @brief
- *
+/*
+ BME280.h
+ Library of 6 functions to extract and process data from the BME280 temperature-humidity sensor using
+ the SPI protocol with the UCB0 module.  Modify registers ctrl_hum, ctrl_meas, and config as needed.
+ Consult the BME280 device data sheet.
  */
 
-/*! @file bme280.h
- * @brief Sensor driver for BME280 sensor
- */
-
-/*!
- * @defgroup BME280 SENSOR API
- */
 #ifndef BME280_H_
 #define BME280_H_
+#define BYTES 20 //Max number of bytes sent on SPI
+#define CS_TH 0x10; //Set CSB to P1.5 on MCU.  Must also be set consistently in main program
 
-/*! CPP guard */
-#ifdef __cplusplus
-extern "C" {
-#endif
+volatile int32_t RawTemp, RawPress, RawHumid;
+volatile uint16_t dig_T1, dig_P1;
+volatile int16_t  dig_T2, dig_T3;
+volatile int16_t  dig_P2, dig_P3, dig_P4, dig_P5, dig_P6, dig_P7, dig_P8, dig_P9;
+volatile int32_t t_fine;
+volatile uint8_t dig_H1, dig_H3, i;
+volatile int8_t dig_H6;
+volatile int16_t dig_H2, dig_H4, dig_H5;
+volatile unsigned char  Tempbuf[30], Humbuf[15];
+char RXbuf[BYTES], RXdata[BYTES], TXbuf[BYTES], Data[BYTES];
 
-/* Header includes */
-#include "bme280_defs.h"
+uint8_t ReadTHid(void) {  // Get the TH sensor chip ID: 0x60
+    uint8_t FLAG;
+    UCB0CTL1 &= ~UCSWRST; //Start USCI
+    P1OUT &= ~CS_TH; //Pull CSB low
+    unsigned char TID[]={0xD0,0x00}; //Read followed by dummy byte
 
-/*!
- *  @brief This API is the entry point.
- *  It reads the chip-id and calibration data from the sensor.
- *
- *  @param[in,out] dev : Structure instance of bme280_dev
- *
- *  @return Result of API execution status
- *  @retval zero -> Success / +ve value -> Warning / -ve value -> Error
- */
-int8_t bme280_init(struct bme280_dev *dev);
+    for (i=0; i < sizeof TID; i++) {
+        while (!(UCB0IFG & UCTXIFG)); //Check if it is OK to write
+        UCB0TXBUF = TID[i]; //Load data into transmit buffer
+        while (!(UCB0IFG & UCRXIFG)); //Wait until complete RX byte is received
+        RXbuf[i] = UCB0RXBUF; //Read buffer to clear RX flag
+    }
 
-/*!
- * @brief This API writes the given data to the register address
- * of the sensor.
- *
- * @param[in] reg_addr : Register address from where the data to be written.
- * @param[in] reg_data : Pointer to data buffer which is to be written
- * in the sensor.
- * @param[in] len : No of bytes of data to write..
- * @param[in] dev : Structure instance of bme280_dev.
- *
- * @return Result of API execution status
- * @retval zero -> Success / +ve value -> Warning / -ve value -> Error
- */
-int8_t bme280_set_regs(uint8_t *reg_addr, const uint8_t *reg_data, uint8_t len, const struct bme280_dev *dev);
-
-/*!
- * @brief This API reads the data from the given register address of the sensor.
- *
- * @param[in] reg_addr : Register address from where the data to be read
- * @param[out] reg_data : Pointer to data buffer to store the read data.
- * @param[in] len : No of bytes of data to be read.
- * @param[in] dev : Structure instance of bme280_dev.
- *
- * @return Result of API execution status
- * @retval zero -> Success / +ve value -> Warning / -ve value -> Error
- */
-int8_t bme280_get_regs(uint8_t reg_addr, uint8_t *reg_data, uint16_t len, const struct bme280_dev *dev);
-
-/*!
- * @brief This API sets the oversampling, filter and standby duration
- * (normal mode) settings in the sensor.
- *
- * @param[in] dev : Structure instance of bme280_dev.
- * @param[in] desired_settings : Variable used to select the settings which
- * are to be set in the sensor.
- *
- * @note : Below are the macros to be used by the user for selecting the
- * desired settings. User can do OR operation of these macros for configuring
- * multiple settings.
- *
- * Macros         |   Functionality
- * -----------------------|----------------------------------------------
- * BME280_OSR_PRESS_SEL    |   To set pressure oversampling.
- * BME280_OSR_TEMP_SEL     |   To set temperature oversampling.
- * BME280_OSR_HUM_SEL    |   To set humidity oversampling.
- * BME280_FILTER_SEL     |   To set filter setting.
- * BME280_STANDBY_SEL  |   To set standby duration setting.
- *
- * @return Result of API execution status
- * @retval zero -> Success / +ve value -> Warning / -ve value -> Error.
- */
-int8_t bme280_set_sensor_settings(uint8_t desired_settings, const struct bme280_dev *dev);
-
-/*!
- * @brief This API gets the oversampling, filter and standby duration
- * (normal mode) settings from the sensor.
- *
- * @param[in,out] dev : Structure instance of bme280_dev.
- *
- * @return Result of API execution status
- * @retval zero -> Success / +ve value -> Warning / -ve value -> Error.
- */
-int8_t bme280_get_sensor_settings(struct bme280_dev *dev);
-
-/*!
- * @brief This API sets the power mode of the sensor.
- *
- * @param[in] dev : Structure instance of bme280_dev.
- * @param[in] sensor_mode : Variable which contains the power mode to be set.
- *
- *    sensor_mode           |   Macros
- * ---------------------|-------------------
- *     0                | BME280_SLEEP_MODE
- *     1                | BME280_FORCED_MODE
- *     3                | BME280_NORMAL_MODE
- *
- * @return Result of API execution status
- * @retval zero -> Success / +ve value -> Warning / -ve value -> Error
- */
-int8_t bme280_set_sensor_mode(uint8_t sensor_mode, const struct bme280_dev *dev);
-
-/*!
- * @brief This API gets the power mode of the sensor.
- *
- * @param[in] dev : Structure instance of bme280_dev.
- * @param[out] sensor_mode : Pointer variable to store the power mode.
- *
- *   sensor_mode            |   Macros
- * ---------------------|-------------------
- *     0                | BME280_SLEEP_MODE
- *     1                | BME280_FORCED_MODE
- *     3                | BME280_NORMAL_MODE
- *
- * @return Result of API execution status
- * @retval zero -> Success / +ve value -> Warning / -ve value -> Error
- */
-int8_t bme280_get_sensor_mode(uint8_t *sensor_mode, const struct bme280_dev *dev);
-
-/*!
- * @brief This API performs the soft reset of the sensor.
- *
- * @param[in] dev : Structure instance of bme280_dev.
- *
- * @return Result of API execution status
- * @retval zero -> Success / +ve value -> Warning / -ve value -> Error.
- */
-int8_t bme280_soft_reset(const struct bme280_dev *dev);
-
-/*!
- * @brief This API reads the pressure, temperature and humidity data from the
- * sensor, compensates the data and store it in the bme280_data structure
- * instance passed by the user.
- *
- * @param[in] sensor_comp : Variable which selects which data to be read from
- * the sensor.
- *
- * sensor_comp |   Macros
- * ------------|-------------------
- *     1       | BME280_PRESS
- *     2       | BME280_TEMP
- *     4       | BME280_HUM
- *     7       | BME280_ALL
- *
- * @param[out] comp_data : Structure instance of bme280_data.
- * @param[in] dev : Structure instance of bme280_dev.
- *
- * @return Result of API execution status
- * @retval zero -> Success / +ve value -> Warning / -ve value -> Error
- */
-int8_t bme280_get_sensor_data(uint8_t sensor_comp, struct bme280_data *comp_data, struct bme280_dev *dev);
-
-/*!
- *  @brief This API is used to parse the pressure, temperature and
- *  humidity data and store it in the bme280_uncomp_data structure instance.
- *
- *  @param[in] reg_data     : Contains register data which needs to be parsed
- *  @param[out] uncomp_data : Contains the uncompensated pressure, temperature
- *  and humidity data.
- */
-void bme280_parse_sensor_data(const uint8_t *reg_data, struct bme280_uncomp_data *uncomp_data);
-
-/*!
- * @brief This API is used to compensate the pressure and/or
- * temperature and/or humidity data according to the component selected by the
- * user.
- *
- * @param[in] sensor_comp : Used to select pressure and/or temperature and/or
- * humidity.
- * @param[in] uncomp_data : Contains the uncompensated pressure, temperature and
- * humidity data.
- * @param[out] comp_data : Contains the compensated pressure and/or temperature
- * and/or humidity data.
- * @param[in] calib_data : Pointer to the calibration data structure.
- *
- * @return Result of API execution status.
- * @retval zero -> Success / -ve value -> Error
- */
-int8_t bme280_compensate_data(uint8_t sensor_comp,
-                              const struct bme280_uncomp_data *uncomp_data,
-                              struct bme280_data *comp_data,
-                              struct bme280_calib_data *calib_data);
-
-#ifdef __cplusplus
+    P1OUT |= CS_TH; //Pull CSB line high
+    UCB0CTL1 |= UCSWRST; //Stop USCI
+    if (RXbuf[1] == 0x60) FLAG =1;
+    else FLAG=0;
+    return FLAG;
 }
-#endif /* End of CPP guard */
+
+void GetCompData(void) {
+    /* Compensation data can be read in sleep mode. Use burst read
+    to get temp, pressure, and humidity compensation bytes starting at first data byte 0X88.
+    Retrieve data while CSB is low. */
+
+	UCB0CTL1 &= ~UCSWRST; //Start USCI
+	P1OUT &= ~CS_TH; //Pull CSB line low
+
+	while (!(UCB0IFG & UCTXIFG)); //Check if it is OK to write
+	UCB0TXBUF = 0x88; //Load first address to be read.
+	while (!(UCB0IFG & UCRXIFG)); //Wait until complete RX byte is received
+	Tempbuf[0] = UCB0RXBUF; //Read buffer to clear RX flag. The first read byte is of no use
+
+	//Burst mode read of temperature, pressure, and first humidity compensation bytes follows
+	for (i=1; i < 27; i++) {
+		while (!(UCB0IFG & UCTXIFG));
+		UCB0TXBUF = 0xAA; //Load dummy data into transmit buffer
+		while (!(UCB0IFG & UCRXIFG));
+		Tempbuf[i] = UCB0RXBUF;
+    }
+
+    P1OUT |= CS_TH; //Pull CSB line high
+    UCB0CTL1 |= UCSWRST; //Stop USCI
+
+    // Build the temperature compensation coefficients
+    dig_T1 = ((uint16_t)(Tempbuf[2] << 8) | (uint16_t)Tempbuf[1]); //unsigned 16-bit int
+    dig_T2 = (int16_t)((uint16_t)(Tempbuf[4] << 8) | (uint16_t)Tempbuf[3]); //signed 16-bit int
+    dig_T3 = (int16_t)((uint16_t)(Tempbuf[6] << 8) | (uint16_t)Tempbuf[5]); //signed 16-bit int
+
+    // Build the pressure compensation coefficients
+    dig_P1 = ((uint16_t)(Tempbuf[8] << 8) | (uint16_t)Tempbuf[7]); //unsigned 16-bit int
+    dig_P2 = (int16_t)((uint16_t)(Tempbuf[10] << 8) | (uint16_t)Tempbuf[9]); //signed 16-bit int
+    dig_P3 = (int16_t)((uint16_t)(Tempbuf[12] << 8) | (uint16_t)Tempbuf[11]); //signed 16-bit int
+    dig_P4 = (int16_t)((uint16_t)(Tempbuf[14] << 8) | (uint16_t)Tempbuf[13]); //signed 16-bit int
+    dig_P5 = (int16_t)((uint16_t)(Tempbuf[16] << 8) | (uint16_t)Tempbuf[15]); //signed 16-bit int
+    dig_P6 = (int16_t)((uint16_t)(Tempbuf[18] << 8) | (uint16_t)Tempbuf[17]); //signed 16-bit int
+    dig_P7 = (int16_t)((uint16_t)(Tempbuf[20] << 8) | (uint16_t)Tempbuf[19]); //signed 16-bit int
+    dig_P8 = (int16_t)((uint16_t)(Tempbuf[22] << 8) | (uint16_t)Tempbuf[21]); //signed 16-bit int
+    dig_P9 = (int16_t)((uint16_t)(Tempbuf[24] << 8) | (uint16_t)Tempbuf[23]); //signed 16-bit int
+
+    Humbuf[1]=Tempbuf[26]; //This is byte 0xA1
+
+    UCB0CTL1 &= ~UCSWRST; //Start USCI
+    P1OUT &= ~CS_TH; //Pull CSB line low
+    //Burst read of remaining humidity bytes follows
+    while (!(UCB0IFG & UCTXIFG));
+    UCB0TXBUF = 0xE1; //Load first read address
+    while (!(UCB0IFG & UCRXIFG));
+    Humbuf[0] = UCB0RXBUF; //Read buffer to clear RX flag. This byte is of no use
+
+    for (i=2; i < 10; i++) { //Write dummy variable to produce burst read
+    	while (!(UCB0IFG & UCTXIFG));
+     	UCB0TXBUF = 0xAA; //Load dummy data into transmit buffer
+     	while (!(UCB0IFG & UCRXIFG));
+     	Humbuf[i] = UCB0RXBUF;
+    }
+
+    P1OUT |= CS_TH; //Pull CSB line high
+    UCB0CTL1 |= UCSWRST; //Stop USCI
+
+    // Build the humidity compensation coefficients
+    dig_H1 = (uint8_t)Humbuf[1]; //0xA1
+    dig_H2 = (int16_t)((uint16_t)(Humbuf[3] << 8) | (uint16_t)Humbuf[2]); //  0xE2/0xE1
+    dig_H3 = (uint8_t)Humbuf[4];  //0xE3
+    //dig_H4 and dig_H5 use the lower and upper nibbles of 0xE5, respectively. Split up Humbuf[6] for this purpose
+    dig_H4 = (int16_t)((uint16_t)(Humbuf[5] << 4) | (uint16_t)(Humbuf[6] & 0x0F)); //0xE4 / low nibble of 0xE5 (12 bits)
+    dig_H5 = (int16_t)((uint16_t)(Humbuf[7] << 4) | (uint16_t)((Humbuf[6] >>4) & 0x0F)); //0xE7 / high nibble of 0xE5 (12 bits)
+    dig_H6 = (uint8_t)Humbuf[8]; //0xE7
+}
+
+void ReadTHsensor(void) {
+  	/* Read from sensor as follows: The ctrl_hum register is written with 0x72 followed by 0x01 for 1x oversampling.
+ 	The ctrl_meas register is written with 0x74; send 0x21 for temperature only, forced mode, 1x oversampling.
+	Send 0x25 for pressure + temperature, forced mode, 1x oversampling.
+	Sending 0x74 also wakes up the sensor and enables any changes written to the ctrl_humid register. The config
+	register 0x75 is forced to zero just in case. No filter is used as recommended for low rate polling.
+  	Use recommended burst mode read of 8 data registers by sending address of first byte 0XF7. Retrieve
+  	data while CSB is low. */
+
+	 //unsigned char TH1[]={0x72,0x01,0x74,0x21,0x75,0x00,0xF7}; //Temperature only
+  	 unsigned char TH1[]={0x72,0x01,0x74,0x25,0x75,0x00,0xF7}; //Temp + pressure
+  	 UCB0CTL1 &= ~UCSWRST; //Start USCI
+  	 P1OUT &= ~CS_TH; //Pull CSB line low
+
+  	 for (i=0; i < sizeof TH1; i++) //Write above data via SPI.  No useful data is read but save anyway
+  	 {
+  		 while (!(UCB0IFG & UCTXIFG)); //Check if it is OK to write
+  		 UCB0TXBUF = TH1[i]; //Load data into transmit buffer
+  		 while (!(UCB0IFG & UCRXIFG)); //Wait until complete RX byte is received
+  		 RXbuf[i] = UCB0RXBUF; //Read buffer to clear RX flag. These bytes are of no use
+  	 }
+  	// Now do a burst read of 8 data bytes (press, temp, humid) from BME280.
+  	for (i=0; i < 9; i++) //Burst read.  Address 0x07 auto-increments
+  	{
+  		while (!(UCB0IFG & UCTXIFG)); //Check if it is OK to write
+  		UCB0TXBUF = 0xAA; //Load dummy data into transmit buffer
+  		while (!(UCB0IFG & UCRXIFG)); //Wait until complete RX byte is received
+  		Data[i] = UCB0RXBUF; //Read buffer to clear RX flag
+  	}
+ 	 P1OUT |= CS_TH; //Pull CSB line high
+ 	 UCB0CTL1 |= UCSWRST; //Stop USCI
+	/*
+	Data[0]: Pressure  MSB
+  	Data[1]: Pressure LSB
+  	Data[2]: Pressure XLSB
+  	Data[3]: Temperature  MSB
+  	Data[4]: Temperature LSB
+  	Data[5]: Temperature XLSB
+  	Data[6]: Humidity MSB
+  	Data[7]: Humidity LSB
+
+	Assemble the data bytes to make a 20-bit long integer for pressure and temperature and a 16-bit integer for humidity */
+ 	RawPress = ((uint32_t)Data[0] << 16 | (uint32_t)Data[1] << 8 | Data[2]) >> 4; //20-bit long unsigned integer
+  	RawTemp = ((uint32_t)Data[3] << 16 | (uint32_t)Data[4] << 8 | Data[5]) >> 4; //20-bit long unsigned integer
+ 	RawHumid = ((uint32_t)Data[6] << 8) | (uint32_t)Data[7]; //16-bit unsigned integer
+}
+
+//The following functions make integer data conversions appropriate for the MSP430
+
+int32_t CalcTemp(void) //32-bit integer conversion formula from BME280 spec sheet
+{
+  	volatile int32_t var1, var2, T;
+  	var1 = (((((int32_t)RawTemp >> 3) - ((int32_t)dig_T1 << 1))) * (int32_t)dig_T2) >> 11;
+  	var2 = (((int32_t)RawTemp >> 4) - (int32_t)dig_T1);
+  	var2 = (((var2*var2) >> 12) * (int32_t)dig_T3) >> 14;
+  	t_fine = var1 + var2;
+  	T = ((t_fine * 5) + 128) >> 8;
+  	return T;
+}
+
+uint32_t CalcHumid(void) //Implement integer conversion formula from BME280 spec sheet
+{
+  	volatile int32_t var3;
+  	var3 = t_fine - (int32_t)76800;
+  	var3 = ((((((int32_t)RawHumid << 14) - (((int32_t)dig_H4) << 20) - (((int32_t)dig_H5) * var3)) +
+  		((int32_t)16384)) >> 15) * (((((((var3 * ((int32_t)dig_H6)) >> 10) * (((var3 *
+  		((int32_t)dig_H3)) >> 11) + ((int32_t)32768))) >> 10) + ((int32_t)2097152)) *
+  		((int32_t)dig_H2) + (int32_t)8192) >> 14));
+  	var3 = (var3 - (((((var3 >> 15) * (var3 >> 15)) >> 7) * ((int32_t)dig_H1)) >> 4));
+  	if(var3 < 0) var3 = 0;
+  	if(var3 > 419430400) var3 = 419430400;
+  	return (uint32_t)(var3 >> 12);
+}
+
+uint32_t CalcPress(void) //32-bit integer conversion formula from BME280 spec sheet
+{
+	volatile int32_t var4, var5;
+	volatile uint32_t p;
+	var4 = (((int32_t)t_fine)>>1) - (int32_t)0xFA00;
+	var5 = (((var4>>2) * (var4>>2)) >> 11 ) * ((int32_t)dig_P6);
+	var5 = var5 + ((var4*((int32_t)dig_P5))<<1);
+	var5 = (var5>>2)+(((int32_t)dig_P4)<<16);
+	var4 = (((dig_P3 * (((var4>>2) * (var4>>2)) >> 13 )) >> 3) + ((((int32_t)dig_P2) * var4)>>1))>>18;
+	var4 = ((((0x8000+var4))*((int32_t)dig_P1))>>15);
+	if (var4 == 0)
+	{
+		return 0; // Avoid exception caused by division by zero
+	}
+	p = (((uint32_t)(((int32_t)0x100000)-RawPress)-(var5>>12)))*0xC35;
+	if (p < 0x80000000)
+	{
+		p = (p << 1) / ((uint32_t)var4);
+	}
+	else
+	{
+		p = (p / (uint32_t)var4) * 2;
+	}
+	var4 = (((int32_t)dig_P9) * ((int32_t)(((p>>3) * (p>>3))>>13)))>>12;
+	var5 = (((int32_t)(p>>2)) * ((int32_t)dig_P8))>>13;
+	p = (uint32_t)((int32_t)p + ((var4 + var5 + dig_P7) >> 4));
+	return p;
+}
+
 #endif /* BME280_H_ */
-/** @}*/

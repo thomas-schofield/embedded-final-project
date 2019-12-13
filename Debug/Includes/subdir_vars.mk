@@ -6,21 +6,27 @@ SHELL = cmd.exe
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../Includes/bme280.c 
+../Includes/BME280_F.c \
+../Includes/BME280_FR.c 
 
 C_DEPS += \
-./Includes/bme280.d 
+./Includes/BME280_F.d \
+./Includes/BME280_FR.d 
 
 OBJS += \
-./Includes/bme280.obj 
+./Includes/BME280_F.obj \
+./Includes/BME280_FR.obj 
 
 OBJS__QUOTED += \
-"Includes\bme280.obj" 
+"Includes\BME280_F.obj" \
+"Includes\BME280_FR.obj" 
 
 C_DEPS__QUOTED += \
-"Includes\bme280.d" 
+"Includes\BME280_F.d" \
+"Includes\BME280_FR.d" 
 
 C_SRCS__QUOTED += \
-"../Includes/bme280.c" 
+"../Includes/BME280_F.c" \
+"../Includes/BME280_FR.c" 
 
 
