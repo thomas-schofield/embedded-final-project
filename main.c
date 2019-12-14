@@ -1,11 +1,7 @@
 #include <msp430.h>
-
-#define DEBUG 1
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
+#include <stdint.h>
 #include <string.h>
+
 #include "src/serial.h"
 #include "src/timer.h"
 #include "src/data_conversion.h"
@@ -22,15 +18,17 @@ int main(void)
     P1DIR |= BIT0;
     P1OUT &= ~BIT0;
 
+    P4SEL &= ~BIT7;
+    P4DIR |= BIT7;
+    P4OUT &= ~BIT7;
+
     setup_spi();
     setup_uart_debug();
+    setup_timer();
 
     // setup_uart();
     //
     // Timer is working
-    // setup_timer();
-
-    unsigned char *str = (unsigned char*)malloc(24*sizeof(unsigned char));
 
     unsigned char* s_temp;
     unsigned char* s_pres;
@@ -50,29 +48,34 @@ int main(void)
 
     while(1) {
         /* Take measurements */
+        //stop_timer();
+        start_uart_debug();
+//        enable_spi();
+
         ReadTHsensor();
 
         temp = CalcTemp();
+        s_temp = format_temperature(temp);
+        write_bytes_uart_debug(s_temp, strlen(s_temp));
+        free(s_temp);
+
         hum = CalcHumid();
+        s_hum = format_humidity(hum);
+        write_bytes_uart_debug(s_hum, strlen(s_hum));
+        free(s_hum);
+
         pres = CalcPress();
-
-        /* TEMP IS GOOD HOLY FUK */
-        // s_temp = format_temperature(temp);
-        // s_hum = format_humidity(hum);
         s_pres = format_pressure(pres);
-
-        sprintf(str, "%s", s_pres);
-        // free(s_temp);
-        // free(s_hum);
+        write_bytes_uart_debug(s_pres, strlen(s_pres));
         free(s_pres);
 
-        write_bytes_uart_debug(str, strlen(str));
-
-        __delay_cycles(500000);
+        __delay_cycles(2500);
+        stop_uart_debug();
+//        disable_spi();
 
         /* Enter low power mode until the timer wakes up the processor */
-        // __bis_SR_register(LPM0_bits + GIE);
-        // __no_operation();
+        _BIS_SR(LPM0_bits|GIE);
+        __no_operation();
     }
 
 	return 0;

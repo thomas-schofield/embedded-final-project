@@ -17,15 +17,22 @@
 #define SLAVE_ADDR 0x77
 
 void setup_spi(void);
+void disable_spi(void);
+void enable_spi(void);
 
 // unsigned char write_byte_spi(unsigned char data);
 // unsigned char* write_bytes_spi(unsigned char* data, unsigned int length);
 
 void setup_uart(void);
 void write_byte_uart(unsigned char data);
+void write_bytes_uart(unsigned char* data, unsigned char length);
+void start_uart(void);
+void stop_uart(void);
 
 void setup_uart_debug(void);
 void write_byte_uart_debug(unsigned char data);
 void write_bytes_uart_debug(unsigned char* data, unsigned char length);
+void start_uart_debug(void);
+void stop_uart_debug(void);
 
 #endif

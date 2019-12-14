@@ -32,6 +32,16 @@ void setup_spi(void) {
     UCB0IE |= UCTXIE|UCRXIE;
 }
 
+void disable_spi(void) {
+    while(!(UCB0IFG & UCTXIFG));
+    UCB0IE &= ~(UCTXIE|UCRXIE);
+}
+
+void enable_spi(void) {
+    while(!(UCB0IFG & UCTXIFG));
+    UCB0IE |= UCTXIE|UCRXIE;
+}
+
 // unsigned char write_byte_spi(unsigned char data) {
 //     UCB0CTL1 &= ~UCSWRST;
 //     while(!(UCB0IFG & UCTXIFG));
@@ -63,7 +73,7 @@ void setup_uart(void) {
     UCA0BR1 = 0;
     UCA0MCTL = UCBRF_0|UCBRS_2;
 
-    UCA0CTL1 &= ~UCSWRST;
+    // UCA0CTL1 &= ~UCSWRST;
 
     UCA0IE |= UCTXIE;
 }
@@ -73,12 +83,24 @@ void write_byte_uart(unsigned char data) {
     UCA0TXBUF = data;
 }
 
-void write_bytes_uart(unsigned char* data, unsigned int length) {
+void write_bytes_uart(unsigned char* data, unsigned char length) {
     unsigned char i;
     for (i = 0; i < length; i++) {
         write_byte_uart(*(data+i));
     }
     free(data);
+}
+
+void start_uart(void) {
+    while(!(UCA0IFG & UCTXIFG));
+    UCA0CTL1 &= ~UCSWRST;
+    UCA0IE |= UCTXIE;
+}
+
+void stop_uart(void) {
+    while(!(UCA0IFG & UCTXIFG));
+    UCA0CTL1 |= UCSWRST;
+    UCA0IE &= ~UCTXIE;
 }
 
 void setup_uart_debug(void) {
@@ -92,7 +114,7 @@ void setup_uart_debug(void) {
 
     UCA1MCTL = UCBRF_0|UCBRS_2;
 
-    UCA1CTL1 &= ~UCSWRST;
+    // UCA1CTL1 &= ~UCSWRST;
 
     UCA1IE |= UCTXIE;
 }
@@ -107,6 +129,16 @@ void write_bytes_uart_debug(unsigned char* data, unsigned char length) {
     for (i = 0; i < length; i++) {
         write_byte_uart_debug(*(data+i));
     }
+}
+
+void start_uart_debug(void) {
+    UCA1CTL1 &= ~UCSWRST;
+    // UCA1IE |= UCTXIE;
+}
+
+void stop_uart_debug(void) {
+    UCA1CTL1 |= UCSWRST;
+    // UCA1IE &= ~UCTXIE;
 }
 
 #endif
