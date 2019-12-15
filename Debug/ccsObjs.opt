@@ -1,1 +1,0 @@
-"./main.obj" "./src/data_conversion.obj" "./src/serial.obj" "./src/timer.obj" "../lnk_msp430f5529.cmd" -llibmath.a -llibc.a 
