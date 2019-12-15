@@ -109,6 +109,13 @@ void stop_uart(void) {
     // UCA0IE &= ~UCTXIE;
 }
 
+void enable_esp(void) {
+    P8OUT |= BIT2;
+}
+void disable_esp(void) {
+    P8OUT &= ~BIT2;
+}
+
 /**
  * @brief      Debugging UART
  */

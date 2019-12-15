@@ -27,11 +27,14 @@ int main(void)
     setup_uart_debug();
     setup_timer();
 
+    unsigned char START[7] = "START\r\n";
+    unsigned char OK[4] = "OK\r\n";
+
+    unsigned char* response;
+
     unsigned char* s_temp;
     unsigned char* s_pres;
     unsigned char* s_hum;
-
-    unsigned char* returned_data;
 
     int32_t temp;
     uint32_t pres, hum;
@@ -52,33 +55,43 @@ int main(void)
 
         ReadTHsensor();
 
-        P8OUT |= BIT2;
+        enable_esp();
+
+        response = write_bytes_uart(&START, strlen(&START));
+        while(strcmp(response, &OK) != 0) {
+            write_bytes_uart_debug("NO\r\n", strlen("NO\r\n"));
+            if (*(response) == "O") {
+                free(response);
+                break;
+            }
+            free(response);
+            response = write_bytes_uart(&START, strlen(&START));
+        }
+        free(response);
 
         temp = CalcTemp();
         s_temp = format_temperature(temp);
-        returned_data = write_bytes_uart(s_temp, strlen(s_temp));
+        response = write_bytes_uart(s_temp, strlen(s_temp));
         write_bytes_uart_debug(s_temp, strlen(s_temp));
-        write_bytes_uart_debug(returned_data, strlen(returned_data));
         free(s_temp);
-        free(returned_data);
+        free(response);
 
         hum = CalcHumid();
         s_hum = format_humidity(hum);
-        returned_data = write_bytes_uart(s_hum, strlen(s_hum));
+        response = write_bytes_uart(s_hum, strlen(s_hum));
         write_bytes_uart_debug(s_hum, strlen(s_hum));
-        write_bytes_uart_debug(returned_data, strlen(returned_data));
         free(s_hum);
-        free(returned_data);
+        free(response);
 
         pres = CalcPress();
         s_pres = format_pressure(pres);
-        returned_data = write_bytes_uart(s_pres, strlen(s_pres));
+        response = write_bytes_uart(s_pres, strlen(s_pres));
         write_bytes_uart_debug(s_pres, strlen(s_pres));
-        write_bytes_uart_debug(returned_data, strlen(returned_data));
+        write_bytes_uart_debug(response, strlen(response));
         free(s_pres);
-        free(returned_data);
+        free(response);
 
-        P8OUT &= ~BIT2;
+        disable_esp();
 
         __delay_cycles(2500);
         stop_uart_debug();

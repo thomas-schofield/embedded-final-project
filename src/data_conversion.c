@@ -3,7 +3,7 @@
 
 #include "src/data_conversion.h"
 
-// unsigned char* number_to_ascii_signed(int number, unsigned int* digit_count) {
+// unsigned char* number_to_ascii(int number, unsigned int* digit_count) {
 //     int divisor = 1;
 //     *(digit_count) = 1;
 

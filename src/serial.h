@@ -28,6 +28,8 @@ unsigned char write_byte_uart(unsigned char data);
 unsigned char* write_bytes_uart(unsigned char* data, unsigned char length);
 void start_uart(void);
 void stop_uart(void);
+void enable_esp(void);
+void disable_esp(void);
 
 void setup_uart_debug(void);
 void write_byte_uart_debug(unsigned char data);
