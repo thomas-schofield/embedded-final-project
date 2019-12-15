@@ -67,41 +67,51 @@ void enable_spi(void) {
  * P3.3 - TX
  */
 void setup_uart(void) {
-    P3SEL |= BIT4|BIT3;
+    P3SEL |= (BIT4|BIT3);
+    P8SEL &= ~BIT2;
+    P8DIR |= BIT2; /* Enable pin */
+
     UCA0CTL1 |= UCSSEL_2 + UCSWRST;
-    UCA0BR0 = 109;
+
+    UCA0BR0 = 9;
     UCA0BR1 = 0;
-    UCA0MCTL = UCBRF_0|UCBRS_2;
+
+    UCA0MCTL = UCBRF_0|UCBRS_1;
 
     // UCA0CTL1 &= ~UCSWRST;
 
     UCA0IE |= UCTXIE;
 }
 
-void write_byte_uart(unsigned char data) {
+unsigned char write_byte_uart(unsigned char data) {
     while(!(UCA0IFG & UCTXIFG));
     UCA0TXBUF = data;
+    while(!(UCA0IFG & UCRXIFG));
+    return (unsigned char) UCA0RXBUF;
 }
 
-void write_bytes_uart(unsigned char* data, unsigned char length) {
+unsigned char* write_bytes_uart(unsigned char* data, unsigned char length) {
+    unsigned char* _data = (unsigned char*)malloc(length*sizeof(unsigned char));
     unsigned char i;
     for (i = 0; i < length; i++) {
-        write_byte_uart(*(data+i));
+        *(_data + i) = write_byte_uart(*(data+i));
     }
-    free(data);
+    return _data;
 }
 
 void start_uart(void) {
-    while(!(UCA0IFG & UCTXIFG));
     UCA0CTL1 &= ~UCSWRST;
-    UCA0IE |= UCTXIE;
+    // UCA0IE |= UCTXIE;
 }
 
 void stop_uart(void) {
-    while(!(UCA0IFG & UCTXIFG));
     UCA0CTL1 |= UCSWRST;
-    UCA0IE &= ~UCTXIE;
+    // UCA0IE &= ~UCTXIE;
 }
+
+/**
+ * @brief      Debugging UART
+ */
 
 void setup_uart_debug(void) {
     /* Setup UART to communicate at 9600 baud (USB) */

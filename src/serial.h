@@ -24,8 +24,8 @@ void enable_spi(void);
 // unsigned char* write_bytes_spi(unsigned char* data, unsigned int length);
 
 void setup_uart(void);
-void write_byte_uart(unsigned char data);
-void write_bytes_uart(unsigned char* data, unsigned char length);
+unsigned char write_byte_uart(unsigned char data);
+unsigned char* write_bytes_uart(unsigned char* data, unsigned char length);
 void start_uart(void);
 void stop_uart(void);
 

@@ -23,16 +23,15 @@ int main(void)
     P4OUT &= ~BIT7;
 
     setup_spi();
+    setup_uart();
     setup_uart_debug();
     setup_timer();
-
-    // setup_uart();
-    //
-    // Timer is working
 
     unsigned char* s_temp;
     unsigned char* s_pres;
     unsigned char* s_hum;
+
+    unsigned char* returned_data;
 
     int32_t temp;
     uint32_t pres, hum;
@@ -48,30 +47,42 @@ int main(void)
 
     while(1) {
         /* Take measurements */
-        //stop_timer();
         start_uart_debug();
-//        enable_spi();
+        start_uart();
 
         ReadTHsensor();
 
+        P8OUT |= BIT2;
+
         temp = CalcTemp();
         s_temp = format_temperature(temp);
+        returned_data = write_bytes_uart(s_temp, strlen(s_temp));
         write_bytes_uart_debug(s_temp, strlen(s_temp));
+        write_bytes_uart_debug(returned_data, strlen(returned_data));
         free(s_temp);
+        free(returned_data);
 
         hum = CalcHumid();
         s_hum = format_humidity(hum);
+        returned_data = write_bytes_uart(s_hum, strlen(s_hum));
         write_bytes_uart_debug(s_hum, strlen(s_hum));
+        write_bytes_uart_debug(returned_data, strlen(returned_data));
         free(s_hum);
+        free(returned_data);
 
         pres = CalcPress();
         s_pres = format_pressure(pres);
+        returned_data = write_bytes_uart(s_pres, strlen(s_pres));
         write_bytes_uart_debug(s_pres, strlen(s_pres));
+        write_bytes_uart_debug(returned_data, strlen(returned_data));
         free(s_pres);
+        free(returned_data);
+
+        P8OUT &= ~BIT2;
 
         __delay_cycles(2500);
         stop_uart_debug();
-//        disable_spi();
+        stop_uart();
 
         /* Enter low power mode until the timer wakes up the processor */
         _BIS_SR(LPM0_bits|GIE);
