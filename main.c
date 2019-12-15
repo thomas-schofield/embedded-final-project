@@ -27,8 +27,8 @@ int main(void)
     setup_uart_debug();
     setup_timer();
 
-    unsigned char START[7] = "START\r\n";
-    unsigned char OK[4] = "OK\r\n";
+    const char START[6] = "START";
+    const char OK[3] = "OK";
 
     unsigned char* response;
 
