@@ -63,17 +63,17 @@ int main(void)
         write_bytes_uart_debug(s_temp);
         free(s_temp);
 
-        // hum = CalcHumid();
-        // s_hum = format_humidity(hum);
-        // write_bytes_uart(s_hum);
-        // write_bytes_uart_debug(s_hum);
-        // free(s_hum);
+        hum = CalcHumid();
+        s_hum = format_humidity(hum);
+        write_bytes_uart((char*)s_hum);
+        write_bytes_uart_debug(s_hum);
+        free(s_hum);
 
-        // pres = CalcPress();
-        // s_pres = format_pressure(pres);
-        // write_bytes_uart(s_pres);
-        // write_bytes_uart_debug(s_pres);
-        // free(s_pres);
+        pres = CalcPress();
+        s_pres = format_pressure(pres);
+        write_bytes_uart((char*)s_pres);
+        write_bytes_uart_debug(s_pres);
+        free(s_pres);
 
         // disable_esp();
 
