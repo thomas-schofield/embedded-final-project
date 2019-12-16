@@ -3,33 +3,9 @@
 
 #include "src/data_conversion.h"
 
-// unsigned char* number_to_ascii(int number, unsigned int* digit_count) {
-//     int divisor = 1;
-//     *(digit_count) = 1;
-
-//     while(number/(divisor*10)) {
-//         divisor *= 10;
-//         ++(*(digit_count));
-//     }
-
-//     unsigned char* _ascii = (unsigned char*)malloc(sizeof(char) * (*(digit_count)));
-//     int i;
-//     for (i = 0; i < *(digit_count); i++) {
-//         *(_ascii + i) = (number / divisor) + 0x30;
-//         number %= divisor;
-//         divisor /= 10;
-//     }
-
-//     if (divisor) {
-//         free(_ascii);
-//         return "ERROR";
-//     }
-
-//     return _ascii;
-// }
-
 unsigned char* format_temperature(int32_t temp) {
-    unsigned char* _data = (unsigned char*)malloc(7*sizeof(unsigned char));
+    unsigned char* _data = (unsigned char*)malloc(7 *
+                                sizeof(unsigned char));
     uint32_t temp_dec;
     temp_dec = abs(temp%100);
     temp /= 100;
@@ -54,7 +30,8 @@ unsigned char* format_pressure(uint32_t pres) {
         size = 9;
     }
 
-    unsigned char* _data = (unsigned char*)malloc(size*sizeof(unsigned char));
+    unsigned char* _data = (unsigned char*)malloc(size *
+                                sizeof(unsigned char));
 
     if (pres_dec < 10) {
         sprintf(_data, "%d.00%d", (int)pres, (int)pres_dec);
@@ -78,7 +55,8 @@ unsigned char* format_humidity(uint32_t hum) {
         size = 8;
     }
 
-    unsigned char* _data = (unsigned char*)malloc(size*sizeof(unsigned char));
+    unsigned char* _data = (unsigned char*)malloc(size *
+                               sizeof(unsigned char));
 
     if (hum_dec < 10) {
         sprintf(_data, "%d.00%d", (int)hum, (int)hum_dec);
