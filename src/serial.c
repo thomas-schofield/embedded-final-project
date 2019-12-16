@@ -26,8 +26,10 @@ void setup_spi(void) {
 //     return (unsigned char) UCB0RXBUF;
 // }
 
-// unsigned char* write_bytes_spi(unsigned char* data, unsigned int length) {
-//     unsigned char* _data = malloc(length * sizeof(unsigned char));
+// unsigned char* write_bytes_spi(unsigned char* data,
+//                                unsigned int length) {
+//     unsigned char* _data = malloc(length *
+//                                   sizeof(unsigned char));
 //     unsigned char i;
 //     for (i = 0; i < length; i++) {
 //         *(_data+i) = write_byte_spi(*(data+i));
