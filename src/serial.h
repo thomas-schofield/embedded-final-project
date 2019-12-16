@@ -24,9 +24,9 @@ void enable_spi(void);
 // unsigned char* write_bytes_spi(unsigned char* data, unsigned int length);
 
 void setup_uart(void);
-void write_byte_uart(unsigned char data);
-unsigned char read_byte_uart(void);
-void write_bytes_uart(unsigned char* data);
+void write_byte_uart(char data);
+void write_bytes_uart(char* data);
+void read_byte_uart(char* data, unsigned int pos);
 void start_uart(void);
 void stop_uart(void);
 void enable_esp(void);
@@ -35,7 +35,6 @@ void disable_esp(void);
 void setup_uart_debug(void);
 void write_byte_uart_debug(char data);
 void write_bytes_uart_debug(char* data);
-char read_byte_uart_debug(void);
 void start_uart_debug(void);
 void stop_uart_debug(void);
 
