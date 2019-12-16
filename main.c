@@ -29,7 +29,8 @@ int main(void)
     P1DIR |= BIT0;
     P1OUT &= ~BIT0;
 
-    /* Setup P4.7 LED to indicate when the MSP reaches the timer interrupt */
+    /* Setup P4.7 LED to indicate when the MSP reaches the
+     * timer interrupt */
     P4SEL &= ~BIT7;
     P4DIR |= BIT7;
     P4OUT &= ~BIT7;
@@ -40,7 +41,8 @@ int main(void)
     setup_uart_debug();
     setup_timer();
 
-    /* Pointers for temperature, pressure, and humidity strings */
+    /* Pointers for temperature, pressure, and humidity
+     * strings */
     unsigned char* s_temp;
     unsigned char* s_pres;
     unsigned char* s_hum;
@@ -69,7 +71,8 @@ int main(void)
         ReadTHsensor();
 
         temp = CalcTemp();
-        /* Use custom string formatting function to format temperature data */
+        /* Use custom string formatting function to format
+         * temperature data */
         s_temp = format_temperature(temp);
         /* Write the formatted character array to the ESP8266 */
         write_bytes_uart((signed char*)s_temp);
@@ -95,7 +98,8 @@ int main(void)
         stop_uart_debug();
         stop_uart();
 
-        /* Enter low power mode until the timer wakes up the processor */
+        /* Enter low power mode until the timer wakes up the
+         * processor */
         _BIS_SR(LPM0_bits|GIE);
         __no_operation();
     }
