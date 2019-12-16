@@ -6,10 +6,8 @@
 volatile unsigned char OVERFLOWS = 0;
 
 void setup_timer(void) {
-    /* Use ACLK, divide by 8, and Continuous Mode */
-    // TA0CTL |= TACLR;
     TA0CTL |= TASSEL_1 + ID_3 + MC_2 + TACLR + TAIE;
-    TA0EX0 |= TAIDEX_7; /* Need to divide the clock again by 8 */
+    TA0EX0 |= TAIDEX_7;
 }
 
 void stop_timer(void) {

@@ -12,7 +12,7 @@
  * P3.0 - MOSI
  * P3.1 - MISO
  * P3.2 - CLK
- * P2.7 - CS
+ * P1.4 - CS
  */
 void setup_spi(void) {
     /* Need to use B0 because A1 is the only other setup that supports UART */
