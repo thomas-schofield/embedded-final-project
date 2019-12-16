@@ -1,16 +1,18 @@
 /**
  * @brief      This file implements timer.
  *
- * @author     Twsch
+ * @author     Thomas Schofield & Tyler Humbert
  * @date       2019
  */
+
 #ifndef TIMER_H
 #define TIMER_H
 
 #include <msp430.h>
 
 /**
- * @brief      Maximum number of times the interrupt counter can overflow.
+ * @brief      Maximum number of times the interrupt
+ *             counter can overflow.
  */
 #define MAX_OVERFLOW 1
 
@@ -39,7 +41,8 @@ void restart_timer(void);
 /**
  * @brief      Interrupt vector function for TimerA
  *
- * This function wakes up the microcontroller after MAX_OVERFLOW times.
+ * This function wakes up the microcontroller after
+ * MAX_OVERFLOW times.
  */
 __interrupt void timer_isr(void);
 
