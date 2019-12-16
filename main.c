@@ -31,36 +31,37 @@ int main(void)
     unsigned char* s_pres;
     unsigned char* s_hum;
 
-    char data[6] = "12.34";
+    // char data[6] = "12.34";
+    // char* data
 
     int32_t temp;
     uint32_t pres, hum;
 
-    // if(ReadTHid()); //Check for presence of sensor; read its ID code
-    // else  //Trap CPU and turn on red LED if not found
-    // {
-    //     P1OUT |= BIT0;
-    //     while(1);
-    // }
+    if(ReadTHid()); //Check for presence of sensor; read its ID code
+    else  //Trap CPU and turn on red LED if not found
+    {
+        P1OUT |= BIT0;
+        while(1);
+    }
 
-    // GetCompData();
+    GetCompData();
 
     while(1) {
         /* Take measurements */
         start_uart_debug();
         start_uart();
 
-        // ReadTHsensor();
+        ReadTHsensor();
 
         // enable_esp();
-        write_bytes_uart_debug(&data);
-        write_bytes_uart(&data);
+        // write_bytes_uart_debug(&data);
+        // write_bytes_uart(&data);
 
-        // temp = CalcTemp();
-        // s_temp = format_temperature(temp);
-        // write_bytes_uart(s_temp);
-        //write_bytes_uart_debug(s_temp);
-        // free(s_temp);
+        temp = CalcTemp();
+        s_temp = format_temperature(temp);
+        write_bytes_uart((signed char*)s_temp);
+        write_bytes_uart_debug(s_temp);
+        free(s_temp);
 
         // hum = CalcHumid();
         // s_hum = format_humidity(hum);
